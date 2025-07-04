@@ -1,0 +1,7 @@
+com\MenuRestoranApplication.class
+com\config\WebConfig.class
+com\config\WebConfig$1.class
+com\repository\MenuRepository.class
+com\controller\MenuController.class
+com\service\MenuService.class
+com\model\Menu.class

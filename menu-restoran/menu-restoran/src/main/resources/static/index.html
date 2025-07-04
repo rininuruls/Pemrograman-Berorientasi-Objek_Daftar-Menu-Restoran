@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍽️ Menu Restoran Aesthetic</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Quicksand', sans-serif;
+      background: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    h1, h2 {
+      color: #ff6f61;
+      text-align: center;
+    }
+
+    input, select {
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      margin: 5px 0;
+      font-size: 14px;
+      width: calc(100% - 20px);
+      display: block;
+    }
+
+    button {
+      background-color: #ff6f61;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 12px;
+      margin: 5px 5px 5px 0;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #ff3b30;
+    }
+
+    .form-actions, .payment {
+      margin-top: 20px;
+    }
+
+    .menu-info {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .kategori {
+      background-color: #ffe0b2;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-left: 6px;
+      font-size: 12px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: #fff3e0;
+      border-radius: 12px;
+      margin: 8px 0;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .total {
+      font-weight: bold;
+      text-align: right;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    #qris-container {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    #qris-container img {
+      width: 150px;
+      margin-bottom: 5px;
+    }
+
+    .nota {
+      margin-top: 30px;
+      padding: 20px;
+      background: #fef9c3;
+      border-radius: 12px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .qty-input {
+      width: 50px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 4px;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍽️ Daftar Menu Restoran</h1>
+    <div id="error-message" class="error"></div>
+    <ul id="menu-list"></ul>
+
+    <h2>➕ Tambah / Edit Menu</h2>
+    <input type="text" id="nama" placeholder="Nama Menu" />
+    <input type="text" id="kategori" placeholder="Kategori" />
+    <input type="number" id="harga" placeholder="Harga" />
+
+    <div class="form-actions">
+      <button onclick="simpanMenu()">💾 Simpan</button>
+      <button onclick="batalEdit()">❌ Batal</button>
+    </div>
+
+    <div class="cart">
+      <h2>🛒 Keranjang</h2>
+      <ul id="keranjang-list"></ul>
+      <p class="total">Total: <span id="total-harga">Rp0</span></p>
+
+      <div class="payment">
+        <label for="metode">Metode Pembayaran:</label>
+        <select id="metode" onchange="toggleQRIS()">
+          <option value="tunai">Tunai</option>
+          <option value="qris">QRIS</option>
+          <option value="debit">Debit</option>
+        </select>
+        <button onclick="prosesPembayaran()">🧾 Bayar Sekarang</button>
+        <div id="notif-bayar" style="margin-top:10px;"></div>
+        <div id="qris-container" class="qris-img" style="display:none;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/QRIS_logo.svg" alt="QRIS Code" />
+          <p>Scan untuk pembayaran QRIS</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nota" id="nota" style="display:none;"></div>
+  </div>
+
+  <!-- ✅ JavaScript tetap sama, tidak diubah -->
+  <script>
+    let editingId = null;
+    let keranjang = [];
+
+    function fetchMenus() {
+      fetch("/api/menu")
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById("menu-list");
+          const error = document.getElementById("error-message");
+          list.innerHTML = "";
+          error.textContent = "";
+
+          if (data.length === 0) {
+            list.innerHTML = "<p style='text-align:center; color:#aaa;'>Belum ada menu tersedia.</p>";
+          }
+
+          data.forEach(menu => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <div>
+                <div class="menu-info">
+                  <strong>${menu.nama}</strong>
+                  <span class="kategori">${menu.kategori}</span> - Rp${menu.harga.toLocaleString()}
+                </div>
+                <div>
+                  <input class="qty-input" type="number" id="qty-${menu.id}" value="1" min="1" />
+                  <button onclick="tambahKeKeranjang(${menu.id}, '${menu.nama}', ${menu.harga})">Tambah</button>
+                  <button onclick="editMenu(${menu.id}, '${menu.nama}', '${menu.kategori}', ${menu.harga})">Edit</button>
+                  <button onclick="hapusMenu(${menu.id})">Hapus</button>
+                </div>
+              </div>
+            `;
+            list.appendChild(li);
+          });
+        })
+        .catch(() => {
+          document.getElementById("error-message").textContent = "⚠️ Gagal memuat data. Pastikan server Spring Boot aktif.";
+        });
+    }
+
+    function simpanMenu() {
+      const nama = document.getElementById("nama").value;
+      const kategori = document.getElementById("kategori").value;
+      const harga = document.getElementById("harga").value;
+      if (!nama || !kategori || !harga) return;
+
+      const menu = { nama, kategori, harga };
+      const url = editingId ? `/api/menu/${editingId}` : "/api/menu";
+      const method = editingId ? "PUT" : "POST";
+
+      fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(menu),
+      }).then(() => {
+        batalEdit();
+        fetchMenus();
+      });
+    }
+
+    function editMenu(id, nama, kategori, harga) {
+      editingId = id;
+      document.getElementById("nama").value = nama;
+      document.getElementById("kategori").value = kategori;
+      document.getElementById("harga").value = harga;
+    }
+
+    function batalEdit() {
+      editingId = null;
+      document.getElementById("nama").value = "";
+      document.getElementById("kategori").value = "";
+      document.getElementById("harga").value = "";
+    }
+
+    function hapusMenu(id) {
+      fetch(`/api/menu/${id}`, { method: "DELETE" }).then(() => fetchMenus());
+    }
+
+    function tambahKeKeranjang(id, nama, harga) {
+      const qty = parseInt(document.getElementById(`qty-${id}`).value) || 1;
+      const existing = keranjang.find(item => item.id === id);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        keranjang.push({ id, nama, harga, qty });
+      }
+      renderKeranjang();
+    }
+
+    function renderKeranjang() {
+      const list = document.getElementById("keranjang-list");
+      const totalSpan = document.getElementById("total-harga");
+      list.innerHTML = "";
+      let total = 0;
+
+      keranjang.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.nama} x${item.qty} = Rp${(item.harga * item.qty).toLocaleString()}`;
+        list.appendChild(li);
+        total += item.harga * item.qty;
+      });
+
+      totalSpan.textContent = `Rp${total.toLocaleString()}`;
+    }
+
+    function toggleQRIS() {
+      const metode = document.getElementById("metode").value;
+      document.getElementById("qris-container").style.display = metode === "qris" ? "block" : "none";
+    }
+
+    function prosesPembayaran() {
+      const metode = document.getElementById("metode").value;
+      const total = keranjang.reduce((sum, item) => sum + item.harga * item.qty, 0);
+      const notif = document.getElementById("notif-bayar");
+
+      if (keranjang.length === 0) {
+        notif.style.color = "red";
+        notif.textContent = "Keranjang masih kosong!";
+        return;
+      }
+
+      notif.style.color = "green";
+      notif.textContent = `✅ Pembayaran Rp${total.toLocaleString()} berhasil dengan metode ${metode.toUpperCase()}.`;
+
+      const nota = document.getElementById("nota");
+      const waktu = new Date().toLocaleString();
+      let isiNota = `<h3>🧾 Struk Pembayaran</h3>`;
+      isiNota += `<p>Waktu: ${waktu}</p><p>Metode: ${metode.toUpperCase()}</p><ul>`;
+      keranjang.forEach(item => {
+        isiNota += `<li>${item.nama} x${item.qty} = Rp${(item.harga * item.qty).toLocaleString()}</li>`;
+      });
+      isiNota += `</ul><p><strong>Total: Rp${total.toLocaleString()}</strong></p>`;
+      isiNota += `<button onclick="window.print()">🖨️ Cetak Nota</button>`;
+      nota.innerHTML = isiNota;
+      nota.style.display = "block";
+
+      keranjang = [];
+      renderKeranjang();
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchMenus);
+  </script>
+</body>
+</html>

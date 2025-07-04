@@ -1,0 +1,33 @@
+/* Warna latar belakang halaman */
+body {
+  background-color: #f8f9fa;
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+/* Judul utama */
+h1 {
+  color: #dc3545; /* merah aesthetic */
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* Judul form */
+h4 {
+  color: #dc3545;
+}
+
+/* Container daftar menu */
+#menu-list {
+  margin-bottom: 20px;
+}
+
+/* Item menu */
+.menu-item {
+  margin-bottom: 10px;
+  color: red;
+  font-weight: bold;
+  padding: 10px;
+  background-color: white;
+  border-radius: 5;
+}
